@@ -7,7 +7,8 @@ const Terrain = () => {
     const h = window.innerHeight;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
-    camera.position.z = 5;
+    camera.position.y = 7;
+    camera.lookAt(0, 0, 0);
 
     // // Init renderer
     const renderer = new THREE.WebGLRenderer();
@@ -23,37 +24,56 @@ const Terrain = () => {
 
     // Add points to scene
     const edgeSize = 160;
-    const offset = {x: -2.25, y: 0.5, z: -2.25};
+    const offset = {x: -2.25, y: 0.75, z: -2.25};
     const gap = 0.03125;
-    const pointSize = 0.04;
-    const noiseFactor = 0.8;
+    const pointSize = 0.08;
+    const noiseFactor = 0.8; 
     
     const noise = new ImprovedNoise();
     const grid = [];
     const colors = [];
     let ns;
-    //let vertex;
 
     for (let row = 0; row < edgeSize; row++) {
         for (let col = 0; col < edgeSize; col++) {
             
             // Generate z coord with noise
             let x = offset.x + col * gap;
-            let y = 0;
             let z = offset.z + row * gap;
             ns = noise.noise(x * noiseFactor, z * noiseFactor, 0);  
-            y = offset.y + ns;    
+            let y = offset.y + ns;    
+    
+            // Determine colors
+            let snowThreshold = 1.1;
+            let grassThreshold = 0.4;
+            let r, g, b;
 
-            // Pick colors
-            let r = 0;
-            let g = Math.random();
-            let b = ns;
+            if (y > snowThreshold) {
+                r = Math.random() * 0.1 + 0.9;
+                g = Math.random() * 0.1 + 0.9;
+                b = Math.random() * 0.1 + 0.9;
+            } 
 
-            //vertex = new THREE.Vector3(x, y, z);
+            else if (y < grassThreshold) {
+                r = 0;
+                g = Math.random() * 0.3 + 0.2;
+                b = 0;
+            }
+
+            else {
+                // Terrain color
+                let terrainFactor = y / 4;
+                let baseGray = Math.random() * 0.3;
+                r = baseGray + terrainFactor;
+                g = baseGray + terrainFactor; 
+                b = baseGray + terrainFactor; 
+            }
+    
             grid.push(x, y, z);
             colors.push(r, g, b);
         }
     }
+    
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(grid, 3));
