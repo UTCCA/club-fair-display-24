@@ -1,86 +1,112 @@
 import * as THREE from 'three';
 import { ImprovedNoise } from 'three/examples/jsm/Addons.js';
 
+// Chunk params
+const CHUNK_SIZE = 80;
+const CHUNK_COUNT = 4;
+const CHUNK_RADIUS = CHUNK_COUNT * CHUNK_SIZE * 0.03125 / 2;
+
 const Terrain = () => {
     // Init scene & camera
     const w = window.innerWidth;
     const h = window.innerHeight;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
-    camera.position.y = 7;
+    camera.position.set(0, 5, 4);
     camera.lookAt(0, 0, 0);
 
-    // // Init renderer
+    // Init renderer
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(w, h);
     renderer.setAnimationLoop(animate);
     document.body.appendChild(renderer.domElement);
 
-    // Add grid to scene
-    const size = 10;
-    const divisions = 10;
-    const gridHelper = new THREE.GridHelper( size, divisions );
-    scene.add( gridHelper );
-
-    // Add points to scene
-    const edgeSize = 160;
-    const offset = {x: -2.25, y: 0.75, z: -2.25};
-    const gap = 0.03125;
-    const pointSize = 0.08;
-    const noiseFactor = 0.8; 
-    
+    // Add chunks
+    const chunks = new Map(); // Store loaded chunks by their coordinates
     const noise = new ImprovedNoise();
-    const grid = [];
-    const colors = [];
-    let ns;
+    const noiseFactor = 0.8;
 
-    for (let row = 0; row < edgeSize; row++) {
-        for (let col = 0; col < edgeSize; col++) {
-            
-            // Generate z coord with noise
-            let x = offset.x + col * gap;
-            let z = offset.z + row * gap;
-            ns = noise.noise(x * noiseFactor, z * noiseFactor, 0);  
-            let y = offset.y + ns;    
-    
-            // Determine colors
-            let snowThreshold = 1.1;
-            let grassThreshold = 0.4;
-            let r, g, b;
+    function updateChunks() {
+        const cx = Math.floor(camera.position.x / (CHUNK_SIZE * 0.03125));
+        const cz = Math.floor(camera.position.z / (CHUNK_SIZE * 0.03125));
 
-            if (y > snowThreshold) {
-                r = Math.random() * 0.1 + 0.9;
-                g = Math.random() * 0.1 + 0.9;
-                b = Math.random() * 0.1 + 0.9;
-            } 
-
-            else if (y < grassThreshold) {
-                r = 0;
-                g = Math.random() * 0.3 + 0.2;
-                b = 0;
+        // Add new chunks
+        for (let dx = -CHUNK_COUNT / 2; dx < CHUNK_COUNT / 2; dx++) {
+            for (let dz = -CHUNK_COUNT / 2; dz < CHUNK_COUNT / 2; dz++) {
+                const key = `${cx + dx}-${cz + dz}`;
+                if (!chunks.has(key)) {
+                    const chunk = createChunk(cx + dx, cz + dz);
+                    chunks.set(key, chunk);
+                    scene.add(chunk);
+                }
             }
-
-            else {
-                // Terrain color
-                let terrainFactor = y / 4;
-                let baseGray = Math.random() * 0.3;
-                r = baseGray + terrainFactor;
-                g = baseGray + terrainFactor; 
-                b = baseGray + terrainFactor; 
-            }
-    
-            grid.push(x, y, z);
-            colors.push(r, g, b);
         }
-    }
-    
 
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.Float32BufferAttribute(grid, 3));
-    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-    const material = new THREE.PointsMaterial({size: pointSize, vertexColors: true});
-    const points = new THREE.Points(geometry, material);
-    scene.add(points);
+        // Remove old chunks
+        chunks.forEach((chunk, key) => {
+            const [chunkX, chunkZ] = key.split('-').map(Number);
+            const distance = Math.sqrt(Math.pow(chunkX - cx, 2) + Math.pow(chunkZ - cz, 2));
+            if (distance > CHUNK_RADIUS) {
+                scene.remove(chunk);
+                chunks.delete(key);
+            }
+        });
+    }
+
+    function createChunk(cx, cz) {
+        const edgeSize = CHUNK_SIZE;
+        const gap = 0.03125;
+        const offset = {
+            x: cx * edgeSize * gap,
+            y: 0.75,
+            z: cz * edgeSize * gap
+        };
+
+        const grid = [];
+        const colors = [];
+
+        for (let row = 0; row < edgeSize; row++) {
+            for (let col = 0; col < edgeSize; col++) {
+                let x = offset.x + col * gap;
+                let z = offset.z + row * gap;
+                let ns = noise.noise(x * noiseFactor, z * noiseFactor, 0);  
+                let y = offset.y + ns;    
+
+                // Determine colors
+                let snowThreshold = 1.1;
+                let grassThreshold = 0.4;
+                let r, g, b;
+
+                if (y > snowThreshold) {
+                    r = Math.random() * 0.1 + 0.9;
+                    g = Math.random() * 0.1 + 0.9;
+                    b = Math.random() * 0.1 + 0.9;
+                } 
+                
+                else if (y < grassThreshold) {
+                    r = 0;
+                    g = Math.random() * 0.3 + 0.2;
+                    b = 0;
+                } 
+                
+                else {
+                    let terrainFactor = y / 4;
+                    let baseGray = Math.random() * 0.3;
+                    r = baseGray + terrainFactor;
+                    g = baseGray + terrainFactor; 
+                    b = baseGray + terrainFactor; 
+                }
+
+                grid.push(x, y, z);
+                colors.push(r, g, b);
+            }
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(grid, 3));
+        geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+        return new THREE.Points(geometry, new THREE.PointsMaterial({size: 0.08, vertexColors: true}));
+    }
 
     // Movement
     const keys = {w: false, a: false, s: false, d: false, space: false, shift: false};
@@ -95,6 +121,7 @@ const Terrain = () => {
         const delta = 0.2;
         handleKeyboardInput(delta);
         updateCameraPosition(delta);
+        updateChunks();
         renderer.render(scene, camera);
     }
 
