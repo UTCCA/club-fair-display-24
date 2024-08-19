@@ -2,9 +2,10 @@ import * as THREE from 'three';
 import { ImprovedNoise } from 'three/examples/jsm/Addons.js';
 
 // Chunk params
-const CHUNK_SIZE = 80;
-const CHUNK_COUNT = 4;
-const CHUNK_RADIUS = CHUNK_COUNT * CHUNK_SIZE * 0.03125 / 2;
+const CHUNK_SIZE = 160;
+const CHUNK_COUNT = 8;
+const POINT_GAP = 0.02;
+const CHUNK_RADIUS = CHUNK_COUNT * CHUNK_SIZE * POINT_GAP / 2;
 
 const Terrain = () => {
     // Init scene & camera
@@ -12,7 +13,7 @@ const Terrain = () => {
     const h = window.innerHeight;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
-    camera.position.set(0, 5, 4);
+    camera.position.set(0, 40, 0);
     camera.lookAt(0, 0, 0);
 
     // Init renderer
@@ -24,16 +25,19 @@ const Terrain = () => {
     // Add chunks
     const chunks = new Map(); // Store loaded chunks by their coordinates
     const noise = new ImprovedNoise();
-    const noiseFactor = 0.8;
+    const mountainClump = 0.1;
+    const mountainHeight = 15;
 
     function updateChunks() {
-        const cx = Math.floor(camera.position.x / (CHUNK_SIZE * 0.03125));
-        const cz = Math.floor(camera.position.z / (CHUNK_SIZE * 0.03125));
+        const cx = Math.floor(camera.position.x / (CHUNK_SIZE * POINT_GAP));
+        const cz = Math.floor(camera.position.z / (CHUNK_SIZE * POINT_GAP));
+        console.log("camY: %f", camera.position.y);
 
         // Add new chunks
         for (let dx = -CHUNK_COUNT / 2; dx < CHUNK_COUNT / 2; dx++) {
             for (let dz = -CHUNK_COUNT / 2; dz < CHUNK_COUNT / 2; dz++) {
                 const key = `${cx + dx}-${cz + dz}`;
+
                 if (!chunks.has(key)) {
                     const chunk = createChunk(cx + dx, cz + dz);
                     chunks.set(key, chunk);
@@ -55,10 +59,10 @@ const Terrain = () => {
 
     function createChunk(cx, cz) {
         const edgeSize = CHUNK_SIZE;
-        const gap = 0.03125;
+        const gap = POINT_GAP;
         const offset = {
             x: cx * edgeSize * gap,
-            y: 0.75,
+            y: 7,
             z: cz * edgeSize * gap
         };
 
@@ -69,12 +73,12 @@ const Terrain = () => {
             for (let col = 0; col < edgeSize; col++) {
                 let x = offset.x + col * gap;
                 let z = offset.z + row * gap;
-                let ns = noise.noise(x * noiseFactor, z * noiseFactor, 0);  
-                let y = offset.y + ns;    
+                let ns = noise.noise(x * mountainClump, z * mountainClump, 0);  
+                let y = offset.y + ns * mountainHeight;    
 
                 // Determine colors
-                let snowThreshold = 1.1;
-                let grassThreshold = 0.4;
+                let snowThreshold = 13;
+                let grassThreshold = 2;
                 let r, g, b;
 
                 if (y > snowThreshold) {
@@ -90,7 +94,7 @@ const Terrain = () => {
                 } 
                 
                 else {
-                    let terrainFactor = y / 4;
+                    let terrainFactor = y * 0.03;
                     let baseGray = Math.random() * 0.3;
                     r = baseGray + terrainFactor;
                     g = baseGray + terrainFactor; 
@@ -105,14 +109,14 @@ const Terrain = () => {
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute("position", new THREE.Float32BufferAttribute(grid, 3));
         geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-        return new THREE.Points(geometry, new THREE.PointsMaterial({size: 0.08, vertexColors: true}));
+        return new THREE.Points(geometry, new THREE.PointsMaterial({size: 0.075, vertexColors: true}));
     }
 
     // Movement
     const keys = {w: false, a: false, s: false, d: false, space: false, shift: false};
     const velocity = new THREE.Vector3(0, 0, 0);
-    const acceleration = 0.05;
-    const maxSpeed = 1;
+    const acceleration = 0.1;
+    const maxSpeed = 5;
     let isMouseDown = false;
     let previousMousePosition = { x: 0, y: 0 };
 
