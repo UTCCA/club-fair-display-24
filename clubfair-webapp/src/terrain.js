@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import { ImprovedNoise } from 'three/examples/jsm/Addons.js';
 
 // Chunk params
-const CHUNK_SIZE = 160;
-const CHUNK_COUNT = 8;
-const POINT_GAP = 0.02;
+const CHUNK_SIZE = 80;
+const CHUNK_COUNT = 16;
+const POINT_GAP = 0.021;
 const CHUNK_RADIUS = CHUNK_COUNT * CHUNK_SIZE * POINT_GAP / 2;
 
 const Terrain = () => {
@@ -13,6 +13,8 @@ const Terrain = () => {
     const h = window.innerHeight;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
+    const cameraQuaternion = new THREE.Quaternion();
+    camera.quaternion.copy(cameraQuaternion);
     camera.position.set(0, 40, 0);
     camera.lookAt(0, 0, 0);
 
@@ -23,7 +25,7 @@ const Terrain = () => {
     document.body.appendChild(renderer.domElement);
 
     // Add chunks
-    const chunks = new Map(); // Store loaded chunks by their coordinates
+    const chunks = new Map();
     const noise = new ImprovedNoise();
     const mountainClump = 0.1;
     const mountainHeight = 15;
@@ -115,7 +117,7 @@ const Terrain = () => {
     // Movement
     const keys = {w: false, a: false, s: false, d: false, space: false, shift: false};
     const velocity = new THREE.Vector3(0, 0, 0);
-    const acceleration = 0.1;
+    const acceleration = 0.2;
     const maxSpeed = 5;
     let isMouseDown = false;
     let previousMousePosition = { x: 0, y: 0 };
@@ -131,32 +133,62 @@ const Terrain = () => {
 
     // Handle keyboard input
     function handleKeyboardInput(delta) {
+        const direction = new THREE.Vector3();
+    
+        // Forward/Backward
         if (keys.w) {
-            velocity.z -= acceleration * delta;
+            direction.z -= acceleration * delta;
         }
         if (keys.s) {
-            velocity.z += acceleration * delta;
+            direction.z += acceleration * delta;
         }
+    
+        // Left/Right
         if (keys.a) {
-            velocity.x -= acceleration * delta;
+            direction.x -= acceleration * delta;
         }
         if (keys.d) {
-            velocity.x += acceleration * delta;
+            direction.x += acceleration * delta;
         }
+    
+        // Apply the camera's current rotation to the movement direction
+        direction.applyQuaternion(camera.quaternion);
+    
+        // Add the calculated direction to the velocity
+        velocity.add(direction);
+        
+        // Up/Down
         if (keys.space) {
             velocity.y += acceleration * delta;
         }
         if (keys.shift) {
             velocity.y -= acceleration * delta;
         }
-
+    
         velocity.clampScalar(-maxSpeed, maxSpeed);
     }
+    
 
     // Update camera position based on velocity
     function updateCameraPosition(delta) {
         camera.position.add(velocity.clone().multiplyScalar(delta));
         velocity.multiplyScalar(0.95);
+    
+        const terrainHeight = getTerrainHeight(camera.position.x, camera.position.z);
+    
+        // Prevent camera from going into terrain
+        if (camera.position.y < terrainHeight + 2) {
+            camera.position.y = terrainHeight + 2;
+            velocity.y = 0;
+        }
+    }
+    
+    // Get terrain height at a point
+    function getTerrainHeight(x, z) {
+        const ns = noise.noise(x * mountainClump, z * mountainClump, 0);  
+        const height = 7 + ns * mountainHeight;
+    
+        return height;
     }
 
     // Event listener for keydown
@@ -214,21 +246,29 @@ const Terrain = () => {
     // Event listener for mouse movement
     function onMouseMove(event) {
         if (isMouseDown) {
+            const rotationSpeed = 0.004;
             const deltaMove = {
                 x: event.clientX - previousMousePosition.x,
                 y: event.clientY - previousMousePosition.y
             };
-
-            const rotationSpeed = 0.005;
-            camera.rotation.y -= deltaMove.x * rotationSpeed;
-            camera.rotation.x -= deltaMove.y * rotationSpeed;
+    
+            const pitchQuaternion = new THREE.Quaternion();
+            pitchQuaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -deltaMove.y * rotationSpeed);
+            const yawQuaternion = new THREE.Quaternion();
+            yawQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -deltaMove.x * rotationSpeed);
+    
+            cameraQuaternion.multiplyQuaternions(yawQuaternion, cameraQuaternion);
+            cameraQuaternion.multiplyQuaternions(cameraQuaternion, pitchQuaternion);
+    
+            camera.quaternion.copy(cameraQuaternion);
         }
-
+    
         previousMousePosition = {
             x: event.clientX,
             y: event.clientY
         };
     }
+    
 
     function onMouseDown(event) {
         isMouseDown = true;
