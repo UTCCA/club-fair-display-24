@@ -20,8 +20,8 @@
 #define MAX_BUFFER_LEN              128
 
 /* WiFi params */
-#define WIFI_SSID                   "Qymlw1"
-#define WIFI_PASSWORD               "Eversyde3353"
+#define WIFI_SSID                   "put wifi name here"
+#define WIFI_PASSWORD               "put wifi password here"
 
 /* Socket */
 #define SERVER_ADDRESS              "192.168.1.245"
