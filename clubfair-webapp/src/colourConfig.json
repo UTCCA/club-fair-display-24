@@ -1,0 +1,72 @@
+[
+    {
+        "lower_echelon": 0,
+        "r": 0.5,
+        "g": 0.4,
+        "b": 0.1,
+        "name": "Deep Sea"
+    },
+    {
+        "lower_echelon": 0.01,
+        "r": 0.6,
+        "g": 0.5,
+        "b": 0.2,
+        "name": "Shallow Sea"
+    },
+    {
+        "lower_echelon": 0.2,
+        "r": 0.8,
+        "g": 0.7,
+        "b": 0.4,
+        "name": "Beach"
+    },
+    {
+        "lower_echelon": 0.3,
+        "r": 0.2,
+        "g": 0.6,
+        "b": 0.1,
+        "name": "Grass"
+    },
+    {
+        "lower_echelon": 0.4,
+        "r": 0.4,
+        "g": 0.8,
+        "b": 0.2,
+        "name": "Dense Grass"
+    },
+    {
+        "lower_echelon": 0.5,
+        "r": 0.6,
+        "g": 0.7,
+        "b": 0.3,
+        "name": "Light Tundra"
+    },
+    {
+        "lower_echelon": 0.6,
+        "r": 0.5,
+        "g": 0.5,
+        "b": 0.4,
+        "name": "Tundra"
+    },
+    {
+        "lower_echelon": 0.7,
+        "r": 0.5,
+        "g": 0.5,
+        "b": 0.5,
+        "name": "Light Mountain"
+    },
+    {
+        "lower_echelon": 0.8,
+        "r": 0.4,
+        "g": 0.4,
+        "b": 0.4,
+        "name": "Mountain"
+    },
+    {
+        "lower_echelon": 0.9,
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "name": "Snow"
+    }
+]
