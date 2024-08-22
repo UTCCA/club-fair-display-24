@@ -1,16 +1,16 @@
 [
     {
         "lower_echelon": 0,
-        "r": 0,
-        "g": 0,
-        "b": 1,
+        "r": 0.5,
+        "g": 0.4,
+        "b": 0.1,
         "name": "Deep Sea"
     },
     {
-        "lower_echelon": 0.1,
-        "r": 0.1,
-        "g": 0.3,
-        "b": 0.8,
+        "lower_echelon": 0.01,
+        "r": 0.6,
+        "g": 0.5,
+        "b": 0.2,
         "name": "Shallow Sea"
     },
     {
