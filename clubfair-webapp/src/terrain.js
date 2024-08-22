@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import terrainColours from "./colourConfig.json"
 import { ImprovedNoise } from 'three/examples/jsm/Addons.js';
 
 // Chunk params
@@ -18,11 +19,17 @@ const Terrain = () => {
     camera.position.set(0, 40, 0);
     camera.lookAt(0, 0, 0);
 
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(0, 10, 0);
+    scene.add(directionalLight);
+
     // Init renderer
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(w, h);
     renderer.setAnimationLoop(animate);
     document.body.appendChild(renderer.domElement);
+
+    
 
     // Add chunks
     const chunks = new Map();
@@ -35,28 +42,28 @@ const Terrain = () => {
         const cz = Math.floor(camera.position.z / (CHUNK_SIZE * POINT_GAP));
         console.log("camY: %f", camera.position.y);
 
-        // Add new chunks
-        for (let dx = -CHUNK_COUNT / 2; dx < CHUNK_COUNT / 2; dx++) {
-            for (let dz = -CHUNK_COUNT / 2; dz < CHUNK_COUNT / 2; dz++) {
-                const key = `${cx + dx}-${cz + dz}`;
+        // // Add new chunks
+        // for (let dx = -CHUNK_COUNT / 2; dx < CHUNK_COUNT / 2; dx++) {
+        //     for (let dz = -CHUNK_COUNT / 2; dz < CHUNK_COUNT / 2; dz++) {
+        //         const key = `${cx + dx}-${cz + dz}`;
 
-                if (!chunks.has(key)) {
-                    const chunk = createChunk(cx + dx, cz + dz);
-                    chunks.set(key, chunk);
-                    scene.add(chunk);
-                }
-            }
-        }
+        //         if (!chunks.has(key)) {
+        //             const chunk = createChunk(cx + dx, cz + dz);
+        //             chunks.set(key, chunk);
+        //             scene.add(chunk);
+        //         }
+        //     }
+        // }
 
-        // Remove old chunks
-        chunks.forEach((chunk, key) => {
-            const [chunkX, chunkZ] = key.split('-').map(Number);
-            const distance = Math.sqrt(Math.pow(chunkX - cx, 2) + Math.pow(chunkZ - cz, 2));
-            if (distance > CHUNK_RADIUS) {
-                scene.remove(chunk);
-                chunks.delete(key);
-            }
-        });
+        // // Remove old chunks
+        // chunks.forEach((chunk, key) => {
+        //     const [chunkX, chunkZ] = key.split('-').map(Number);
+        //     const distance = Math.sqrt(Math.pow(chunkX - cx, 2) + Math.pow(chunkZ - cz, 2));
+        //     if (distance > CHUNK_RADIUS) {
+        //         scene.remove(chunk);
+        //         chunks.delete(key);
+        //     }
+        // });
     }
 
     function createChunk(cx, cz) {
@@ -114,6 +121,90 @@ const Terrain = () => {
         return new THREE.Points(geometry, new THREE.PointsMaterial({size: 0.075, vertexColors: true}));
     }
 
+    function createRasterizedChunk(tx, tz) {
+        const edgeSize = 1000;
+        const sampleFidelity = 1; // (0,1]
+        const gap = Math.floor(1 / sampleFidelity);
+        const octaveFactors = [1,8,16];
+        const octaveSum = 25
+        const octaves = 3;
+        const offset = {
+          x: tx * edgeSize,
+          y: 0,
+          z: tz * edgeSize,
+        };
+      
+        const vertices = [];
+        const indices = [];
+        const normals = [];
+        const colors = [];
+
+        for (let row = 0; row < edgeSize; row++) {
+            for (let col = 0; col < edgeSize; col++) {
+            let x = offset.x + col * gap;
+            let z = offset.z + row * gap;
+            let y = 0;
+            
+            for (let idx = 0; idx < octaves; idx++) {
+                y += noise.noise(x / octaveFactors[idx] / 2, z / octaveFactors[idx] /2, 0) * octaveFactors[idx];
+            }
+
+            // Determine colors
+            let colmapValue = y/10
+            let r, g, b;
+            let idx = 9;
+            while (idx >= 0){
+                r = terrainColours[idx].r;
+                g = terrainColours[idx].g;
+                b = terrainColours[idx].b;
+                
+                if (colmapValue > terrainColours[idx].lower_echelon){
+                    break;
+                }
+
+                idx--;
+            }
+            colors.push(r, g, b);
+
+            vertices.push(x, y, z);
+
+            // Calculate normals
+            let normal = new THREE.Vector3(0, 1, 0);
+            normals.push(normal.x, normal.y, normal.z);
+
+
+            // Create indices for the mesh
+            if (row < edgeSize - 1 && col < edgeSize - 1) {
+                let topLeft = row * edgeSize + col;
+                let bottomLeft = topLeft + edgeSize;
+                let bottomRight = bottomLeft + 1;
+                let topRight = topLeft + 1;
+
+                indices.push(topLeft, bottomLeft, bottomRight);
+                indices.push(bottomRight, topRight, topLeft);
+            }
+            }
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(vertices), 3));
+        geometry.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(normals), 3));
+        geometry.setAttribute("color", new THREE.BufferAttribute(new Float32Array(colors), 3));
+        geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+
+        const material = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            vertexColors: true,
+            flatShading: true,
+        });
+
+        return new THREE.Mesh(geometry, material);
+    }
+
+    // Add a rasterized chunk
+    const tMesh = createRasterizedChunk(0,0);
+    scene.add(tMesh)
+
     // Movement
     const keys = {w: false, a: false, s: false, d: false, space: false, shift: false};
     const velocity = new THREE.Vector3(0, 0, 0);
@@ -127,7 +218,7 @@ const Terrain = () => {
         const delta = 0.2;
         handleKeyboardInput(delta);
         updateCameraPosition(delta);
-        updateChunks();
+        // updateChunks();
         renderer.render(scene, camera);
     }
 
@@ -246,7 +337,7 @@ const Terrain = () => {
     // Event listener for mouse movement
     function onMouseMove(event) {
         if (isMouseDown) {
-            const rotationSpeed = 0.004;
+            const rotationSpeed = 0.04;
             const deltaMove = {
                 x: event.clientX - previousMousePosition.x,
                 y: event.clientY - previousMousePosition.y
