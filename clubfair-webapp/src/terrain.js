@@ -17,13 +17,46 @@ const Terrain = () => {
     camera.position.set(0, 40, 0);
     camera.lookAt(-1, 40, 0);
 
+    // Add lights
+
+    const magicLightRadius = edgeSize/2
     const directionalLightYellow = new THREE.DirectionalLight(0xffff00, 0.5);
-    directionalLightYellow.position.set(edgeSize/2, 10, edgeSize/2);
+    directionalLightYellow.position.set(magicLightRadius, 10, magicLightRadius);
     scene.add(directionalLightYellow);
 
     const directionalLightPink = new THREE.DirectionalLight(0xff00ff, 0.5);
-    directionalLightPink.position.set(-edgeSize, 10, -edgeSize/2);
+    directionalLightPink.position.set(-magicLightRadius, 10, -magicLightRadius);
     scene.add(directionalLightPink);
+
+    const dGeo = new THREE.DodecahedronGeometry(20); // radius of 20
+
+    // Define the emissive colors
+    const emissiveColorPink = new THREE.Color(0xff0044); // Pink color
+    const emissiveColorYellow = new THREE.Color(0x664400); // Yellow color
+
+    // Create materials with emissive properties
+    const ddMATPink = new THREE.MeshStandardMaterial({
+        // color: 0xffffff,
+        emissive: emissiveColorPink,
+        emissiveIntensity: 5, // Adjust this value to control the strength of the glow
+        // flatShading: true,
+    });
+
+    const ddMATYellow = new THREE.MeshStandardMaterial({
+        // color: 0xffffff,
+        emissive: emissiveColorYellow,
+        emissiveIntensity: 5, // Adjust this value to control the strength of the glow
+        // flatShading: true,
+    });
+
+    // Create meshes with the materials
+    const pinkDD = new THREE.Mesh(dGeo, ddMATPink);
+    pinkDD.position.set(-magicLightRadius, 140, -magicLightRadius);
+    scene.add(pinkDD);
+
+    const yellowDD = new THREE.Mesh(dGeo, ddMATYellow);
+    yellowDD.position.set(magicLightRadius, 140, magicLightRadius);
+    scene.add(yellowDD);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
     directionalLight.position.set(0, 10, 0);
@@ -177,11 +210,25 @@ const Terrain = () => {
     // Animate function
     function animate() {
         const delta = 0.2;
+        const useTime = Date.now() / 100000;
+
         handleKeyboardInput(delta);
         updateCameraPosition(delta);
-        currentWaterLevel = WATER_LEVEL + Math.sin(Date.now() / 10000);
+        currentWaterLevel = WATER_LEVEL + Math.sin(useTime * 10);
         waterMesh.position.set(0, currentWaterLevel, 0);
         // updateChunks();
+        
+        pinkDD.position.set(magicLightRadius * Math.sin(useTime), 140, magicLightRadius * Math.cos(useTime));
+        directionalLightPink.position.set(magicLightRadius * Math.sin(useTime), 20, magicLightRadius * Math.cos(useTime));
+        yellowDD.position.set(-magicLightRadius * Math.sin(useTime), 140, -magicLightRadius * Math.cos(useTime));
+        directionalLightYellow.position.set(-magicLightRadius * Math.sin(useTime), 20, -magicLightRadius * Math.cos(useTime));
+        
+        
+        pinkDD.rotation.x += 0.0007;
+        pinkDD.rotation.y += 0.0007;
+        yellowDD.rotation.x += 0.0007;
+        yellowDD.rotation.y += 0.0007;
+
         renderer.render(scene, camera);
     }
 
