@@ -14,21 +14,21 @@ void setup() {
 
   Serial.println("Connected to WiFi");
   
-
-  pinMode(BUTTON_PIN_1, INPUT_PULLUP);
-  pinMode(BUTTON_PIN_2, INPUT_PULLUP);
-  pinMode(BUTTON_PIN_3, INPUT_PULLUP);
-  pinMode(BUTTON_PIN_4, INPUT_PULLUP);
+  pinMode(BUTTON_PIN_J, INPUT_PULLUP);
+  pinMode(BUTTON_PIN_R, INPUT_PULLUP);
+  pinMode(BUTTON_PIN_U, INPUT_PULLUP);
+  pinMode(BUTTON_PIN_D, INPUT_PULLUP);
+  pinMode(BUTTON_PIN_L, INPUT_PULLUP);
 }
 
 void loop() {
-  
-  int button1Value = check_button_press_1();
-  int button2Value = check_button_press_2();
-  int button3Value = check_button_press_3();
-  int button4Value = check_button_press_4();
+  int buttonJValue = check_button_press_j();
+  int buttonRValue = check_button_press_r();
+  int buttonUValue = check_button_press_u();
+  int buttonDValue = check_button_press_d();
+  int buttonLValue = check_button_press_l();
   int potentiometerValue = read_potentiometer();
-  String inputValues = String(button1Value) +'c'+ String(button2Value) +'c'+ String(button3Value) +'c'+ String(button4Value) +'c'+ String(potentiometerValue);
+  String inputValues = String(buttonRValue) +'c'+ String(buttonUValue) +'c'+ String(buttonDValue) +'c'+ String(buttonLValue) +'c'+ String(potentiometerValue);
   Serial.println(inputValues);
   sendHTTPrequest(inputValues);
 

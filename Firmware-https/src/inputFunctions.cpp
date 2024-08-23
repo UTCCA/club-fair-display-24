@@ -43,6 +43,24 @@ int read_potentiometer()
     
 }
 
+int check_button_press_j()
+{
+  int pressed = digitalRead(BUTTON_PIN_J);
+  if(pressed == HIGH)
+  {
+    if(debounce_check(last_debounce_time_j))
+    {
+      last_debounce_time_j = millis();
+      return 1;
+    }
+  }
+  else
+  {
+    return 0;
+  }
+ 
+}
+
 int check_button_press_r()
 {
   int pressed = digitalRead(BUTTON_PIN_1);
