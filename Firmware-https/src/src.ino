@@ -26,7 +26,7 @@ void loop() {
   int button1Value = check_button_press_1();
   int button2Value = check_button_press_2();
   int button3Value = check_button_press_3();
-  int button4Value = check_button_press_3();
+  int button4Value = check_button_press_4();
   int potentiometerValue = read_potentiometer();
   String inputValues = String(button1Value) + String(button2Value) + String(button3Value) + String(button4Value) + String(potentiometerValue);
   Serial.println(inputValues);
