@@ -15,7 +15,7 @@ const Terrain = () => {
     const cameraQuaternion = new THREE.Quaternion();
     camera.quaternion.copy(cameraQuaternion);
     camera.position.set(0, 40, 0);
-    camera.lookAt(-1, 40, 0);
+    camera.lookAt(0, 40, 0);
 
     // Add lights
 
@@ -223,7 +223,6 @@ const Terrain = () => {
         yellowDD.position.set(-magicLightRadius * Math.sin(useTime), 140, -magicLightRadius * Math.cos(useTime));
         directionalLightYellow.position.set(-magicLightRadius * Math.sin(useTime), 20, -magicLightRadius * Math.cos(useTime));
         
-        
         pinkDD.rotation.x += 0.0007;
         pinkDD.rotation.y += 0.0007;
         yellowDD.rotation.x += 0.0007;
@@ -232,7 +231,6 @@ const Terrain = () => {
         renderer.render(scene, camera);
     }
 
-    // Handle keyboard input
     function handleKeyboardInput(delta) {
         const direction = new THREE.Vector3();
     
@@ -257,35 +255,60 @@ const Terrain = () => {
     
         // Add the calculated direction to the velocity
         velocity.add(direction);
-        
-        // Up/Down
-        if (keys.space) {
-            velocity.y += acceleration * delta;
+        console.log("camera y: %f", camera.position.y);
+    
+        // Spacebar
+        if (keys.space && isGrounded) {
+            velocity.y = 1.7; // Initial jump velocity
+            isGrounded = false;            
         }
-        if (keys.shift) {
-            velocity.y -= acceleration * delta;
+        if (keys.space && isSwimming && camera.position.y <= currentWaterLevel) {
+            velocity.y = 1;
+            isSwimming = false;            
         }
     
         velocity.clampScalar(-maxSpeed, maxSpeed);
     }
     
+    // Add gravity
+    const GRAVITY = -0.3;
+    let isGrounded = false;
+    let isSwimming = false;
 
-    // Update camera position based on velocity
     function updateCameraPosition(delta) {
-        camera.position.add(velocity.clone().multiplyScalar(delta));
-        velocity.multiplyScalar(0.8);
-    
-        const terrainHeight = getTerrainHeight(camera.position.x, camera.position.z);
-    
-        // Prevent camera from going into terrain
-        if (camera.position.y < terrainHeight + staticCameraHeight) {
-            camera.position.y = terrainHeight + staticCameraHeight;
-            velocity.y = 0;
+
+        // Apply gravity if not grounded
+        if (!isGrounded) {
+            velocity.y += GRAVITY * delta;
         }
 
+        // Apply friction to horizontal movement
+        velocity.x *= 0.95;
+        velocity.z *= 0.95;
+
+        const terrainHeight = getTerrainHeight(camera.position.x, camera.position.z);
+
+        // Check if grounded
+        if (camera.position.y <= terrainHeight + staticCameraHeight) {
+            camera.position.y = terrainHeight + staticCameraHeight;
+            velocity.y = 0;
+            isGrounded = true;
+        } 
+        else {
+            isGrounded = false;
+        }
+
+        // Check if swimming
         if (camera.position.y <= currentWaterLevel) {
-            scene.fog = underwaterFog
-        } else {scene.fog = regularFog}
+            scene.fog = underwaterFog;
+            camera.position.add(velocity.clone().multiplyScalar(delta * 0.3));
+            isSwimming = true;
+        } 
+        else {
+            scene.fog = regularFog;
+            camera.position.add(velocity.clone().multiplyScalar(delta));
+            isSwimming = false
+        }
     }
     
     // Get terrain height at a point
@@ -294,14 +317,11 @@ const Terrain = () => {
         let height;
         
         try {
-
             height = terrainHeights[Math.floor(z)+edgeSize/2][Math.floor(x)+edgeSize/2];
-
-        } catch (error) {
-
+        } 
+        catch (error) {
             console.log(x,z)
-            height = 0;
-            
+            height = 0;  
         }
         
         return height;
@@ -326,10 +346,6 @@ const Terrain = () => {
                 keys.space = true;
                 event.preventDefault();
                 break;
-            case 'ShiftLeft':
-                keys.shift = true;
-                event.preventDefault();
-                break;
         }
     }
 
@@ -352,33 +368,36 @@ const Terrain = () => {
                 keys.space = false;
                 event.preventDefault();
                 break;
-            case 'ShiftLeft':
-                keys.shift = false;
-                event.preventDefault();
-                break;
         }
     }
 
-    // Event listener for mouse movement
+    // Handle mouse movement
+    const MIN_PITCH_ANGLE = 0.1;
+    const MAX_PITCH_ANGLE = Math.PI * 0.95;
+    let currentPitch = 0;
+    let currentYaw = 0;
+
     function onMouseMove(event) {
         if (isMouseDown) {
-            const rotationSpeed = 0.04;
+            const rotationSpeed = 0.0225;
             const deltaMove = {
                 x: event.clientX - previousMousePosition.x,
                 y: event.clientY - previousMousePosition.y
             };
-    
-            const pitchQuaternion = new THREE.Quaternion();
-            pitchQuaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -deltaMove.y * rotationSpeed);
-            const yawQuaternion = new THREE.Quaternion();
-            yawQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -deltaMove.x * rotationSpeed);
-    
-            cameraQuaternion.multiplyQuaternions(yawQuaternion, cameraQuaternion);
-            cameraQuaternion.multiplyQuaternions(cameraQuaternion, pitchQuaternion);
-    
+
+            currentYaw -= deltaMove.x * rotationSpeed;
+            currentPitch -= deltaMove.y * rotationSpeed;
+
+            // Restrict pitch
+            currentPitch = Math.max(MIN_PITCH_ANGLE - Math.PI / 2, Math.min(MAX_PITCH_ANGLE - Math.PI / 2, currentPitch));
+
+            // Create a new quaternion from calculated angles
+            const euler = new THREE.Euler(currentPitch, currentYaw, 0, 'YXZ');
+            cameraQuaternion.setFromEuler(euler);
+
             camera.quaternion.copy(cameraQuaternion);
         }
-    
+
         previousMousePosition = {
             x: event.clientX,
             y: event.clientY
