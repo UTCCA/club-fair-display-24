@@ -2,9 +2,12 @@
 #include <HTTPClient.h>
 
 // Global debounce times
-unsigned long last_debounce_time_1 = 0;
-unsigned long last_debounce_time_2 = 0;
-unsigned long last_debounce_time_3 = 0;
+unsigned long last_debounce_time_j = 0;
+unsigned long last_debounce_time_r = 0;
+unsigned long last_debounce_time_u = 0;
+unsigned long last_debounce_time_d = 0;
+unsigned long last_debounce_time_l = 0;
+
 
 
 bool debounce_check(unsigned long last_debounce_time)
@@ -63,12 +66,12 @@ int check_button_press_j()
 
 int check_button_press_r()
 {
-  int pressed = digitalRead(BUTTON_PIN_1);
+  int pressed = digitalRead(BUTTON_PIN_R);
   if(pressed == HIGH)
   {
-    if(debounce_check(last_debounce_time_1))
+    if(debounce_check(last_debounce_time_r))
     {
-      last_debounce_time_1 = millis();
+      last_debounce_time_r = millis();
       return 1;
     }
   }
@@ -81,12 +84,12 @@ int check_button_press_r()
 
 int check_button_press_u()
 {
-  int pressed = digitalRead(BUTTON_PIN_2);
+  int pressed = digitalRead(BUTTON_PIN_U);
   if(pressed == HIGH)
   {
-    if(debounce_check(last_debounce_time_2))
+    if(debounce_check(last_debounce_time_u))
     {
-      last_debounce_time_2 = millis();
+      last_debounce_time_u = millis();
       return 1;
     }
   }
@@ -98,12 +101,12 @@ int check_button_press_u()
 
 int check_button_press_d()
 {
-  int pressed = digitalRead(BUTTON_PIN_3);
+  int pressed = digitalRead(BUTTON_PIN_D);
   if(pressed == HIGH)
   {
-    if(debounce_check(last_debounce_time_3))
+    if(debounce_check(last_debounce_time_d))
     {
-      last_debounce_time_3 = millis();
+      last_debounce_time_d = millis();
       return 1;
     }
   }
@@ -115,12 +118,12 @@ int check_button_press_d()
 
 int check_button_press_l()
 {
-  int pressed = digitalRead(BUTTON_PIN_4);
+  int pressed = digitalRead(BUTTON_PIN_L);
   if(pressed == HIGH)
   {
-    if(debounce_check(last_debounce_time_4))
+    if(debounce_check(last_debounce_time_l))
     {
-      last_debounce_time_4 = millis();
+      last_debounce_time_l = millis();
       return 1;
     }
   }

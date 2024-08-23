@@ -23,11 +23,11 @@
 
 
 // Debouncing variables
-extern unsigned long last_debounce_time_J;
-extern unsigned long last_debounce_time_R;
-extern unsigned long last_debounce_time_U;
-extern unsigned long last_debounce_time_D;
-extern unsigned long last_debounce_time_L;
+extern unsigned long last_debounce_time_j;
+extern unsigned long last_debounce_time_r;
+extern unsigned long last_debounce_time_u;
+extern unsigned long last_debounce_time_d;
+extern unsigned long last_debounce_time_l;
 
 const unsigned long debounce_delay = 50; // debounce time in ms
 
