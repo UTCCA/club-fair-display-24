@@ -10,6 +10,8 @@ int read_potentiometer();
 int check_button_press_1();
 int check_button_press_2();
 int check_button_press_3();
+int check_button_press_4();
+
 void sendHTTPrequest(String value);
 bool debounce_check(unsigned long last_debounce_time);
 

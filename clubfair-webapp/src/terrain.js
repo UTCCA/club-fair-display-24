@@ -3,7 +3,7 @@ import terrainColours from "./colourConfig.json"
 import { ImprovedNoise } from 'three/examples/jsm/Addons.js';
 
 // Chunk params
-const edgeSize = 800;
+const edgeSize = 1000;
 const staticCameraHeight = 2.0;
 
 const Terrain = () => {
@@ -18,8 +18,7 @@ const Terrain = () => {
     camera.lookAt(0, 40, 0);
 
     // Add lights
-
-    const magicLightRadius = edgeSize/2
+    const magicLightRadius = edgeSize/2.5
     const directionalLightYellow = new THREE.DirectionalLight(0xffff00, 0.5);
     directionalLightYellow.position.set(magicLightRadius, 10, magicLightRadius);
     scene.add(directionalLightYellow);
@@ -51,12 +50,12 @@ const Terrain = () => {
 
     // Create meshes with the materials
     const pinkDD = new THREE.Mesh(dGeo, ddMATPink);
-    pinkDD.position.set(-magicLightRadius, 140, -magicLightRadius);
+    pinkDD.position.set(-magicLightRadius, 400, -magicLightRadius);
     scene.add(pinkDD);
 
-    const yellowDD = new THREE.Mesh(dGeo, ddMATYellow);
-    yellowDD.position.set(magicLightRadius, 140, magicLightRadius);
-    scene.add(yellowDD);
+    // const yellowDD = new THREE.Mesh(dGeo, ddMATYellow);
+    // yellowDD.position.set(magicLightRadius, 400, magicLightRadius);
+    // scene.add(yellowDD);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
     directionalLight.position.set(0, 10, 0);
@@ -174,7 +173,7 @@ const Terrain = () => {
     }
 
     const underwaterFog = new THREE.FogExp2(0x000033, 0.05);
-    const regularFog = new THREE.FogExp2(0x111111, 0.00);
+    const regularFog = new THREE.FogExp2(0x111111, 0.002);
 
     scene.fog = regularFog
 
@@ -207,30 +206,7 @@ const Terrain = () => {
     let isMouseDown = false;
     let previousMousePosition = { x: 0, y: 0 };
 
-    // Animate function
-    function animate() {
-        const delta = 0.2;
-        const useTime = Date.now() / 100000;
-
-        handleKeyboardInput(delta);
-        updateCameraPosition(delta);
-        currentWaterLevel = WATER_LEVEL + Math.sin(useTime * 10);
-        waterMesh.position.set(0, currentWaterLevel, 0);
-        // updateChunks();
-        
-        pinkDD.position.set(magicLightRadius * Math.sin(useTime), 140, magicLightRadius * Math.cos(useTime));
-        directionalLightPink.position.set(magicLightRadius * Math.sin(useTime), 20, magicLightRadius * Math.cos(useTime));
-        yellowDD.position.set(-magicLightRadius * Math.sin(useTime), 140, -magicLightRadius * Math.cos(useTime));
-        directionalLightYellow.position.set(-magicLightRadius * Math.sin(useTime), 20, -magicLightRadius * Math.cos(useTime));
-        
-        pinkDD.rotation.x += 0.0007;
-        pinkDD.rotation.y += 0.0007;
-        yellowDD.rotation.x += 0.0007;
-        yellowDD.rotation.y += 0.0007;
-
-        renderer.render(scene, camera);
-    }
-
+    // Handle keyboard input
     function handleKeyboardInput(delta) {
         const direction = new THREE.Vector3();
     
@@ -276,7 +252,6 @@ const Terrain = () => {
     let isSwimming = false;
 
     function updateCameraPosition(delta) {
-
         // Apply gravity if not grounded
         if (!isGrounded) {
             velocity.y += GRAVITY * delta;
@@ -285,7 +260,6 @@ const Terrain = () => {
         // Apply friction to horizontal movement
         velocity.x *= 0.95;
         velocity.z *= 0.95;
-
         const terrainHeight = getTerrainHeight(camera.position.x, camera.position.z);
 
         // Check if grounded
@@ -427,6 +401,179 @@ const Terrain = () => {
     }
 
     window.addEventListener("resize", handleWindowResize);
+
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particleCount = 2500;
+    const posArray = new Float32Array(particleCount * 3);
+    
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    particlesGeometry.setAttribute('size', new THREE.BufferAttribute(new Float32Array(particleCount), 1));
+
+    // const particlesMaterial = new THREE.PointsMaterial({
+    //   color: 0xffffff,
+    //   transparent: true,
+    //   opacity: 0.8,
+    //   blending: THREE.AdditiveBlending,
+    //   sizeAttenuation: true
+    // });
+
+    const particlesMaterial = new THREE.ShaderMaterial({
+        vertexShader: `
+          attribute float size;
+          varying float vSize;
+          void main() {
+            vSize = size;
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            gl_PointSize = size * (300.0 / -mvPosition.z);
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 color;
+          varying float vSize;
+          void main() {
+            if (length(gl_PointCoord - vec2(0.5, 0.5)) > 0.5) discard;
+            gl_FragColor = vec4(color, 1.0);
+          }
+        `,
+        uniforms: {
+          color: { value: new THREE.Color(0xffffff) }
+        },
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending,
+      });
+    
+    const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+    scene.add(particlesMesh);
+
+    const curveMaterial = new THREE.ShaderMaterial({
+        vertexShader: `
+            varying vec3 vPosition;
+            varying float vSize;
+            
+            void main() {
+                vPosition = position;
+                vSize = size;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vPosition;
+            varying float vSize;
+            
+            void main() {
+                float intensity = length(vPosition) * 0.1;
+                gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0) * intensity; // Greenish glow
+            }
+        `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+
+    let curveIndices = {};
+    const positions = particlesGeometry.attributes.position.array;
+    const linesCount = 0;
+
+    for (let i = 0; i < linesCount; i++) {
+      const index1 = Math.floor(Math.random() * particleCount) * 3;
+      const index2 = Math.floor(Math.random() * particleCount) * 3;
+      curveIndices[i] = [index1, index2];
+
+      const point1 = new THREE.Vector3(positions[index1], positions[index1 + 1], positions[index1 + 2]);
+      const point2 = new THREE.Vector3(positions[index2], positions[index2 + 1], positions[index2 + 2]);
+
+      const curve = new THREE.CatmullRomCurve3([point1, point2]);
+      const curveGeometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(50));
+      const curveLine = new THREE.Line(curveGeometry, curveMaterial);
+      scene.add(curveLine);
+    }
+
+    let frame = 0;
+
+    // Fibboniaci sphere algo to init. Particles
+
+    let OGParticlePositions = particlesGeometry.attributes.position.array;
+    let phi = Math.PI * (Math.sqrt(5.0) - 1.0)
+    const sphereRadius = edgeSize * 0.707;
+    const randomInfluence = 100;
+
+    for (let i = 0; i < particleCount; i++) {
+        let y = (1 - (i / (particleCount - 1.0)) * 2.0)
+        let radius = Math.sqrt(1 - y * y)
+
+        let theta = phi * i
+
+        let x = Math.cos(theta) * radius
+        let z = Math.sin(theta) * radius
+
+        const i3 = i * 3;
+        OGParticlePositions[i3] = sphereRadius*x + (Math.random() - 0.5) * randomInfluence;
+        OGParticlePositions[i3 + 1] = sphereRadius*y + (Math.random() - 0.5) * randomInfluence;
+        OGParticlePositions[i3 + 2] = sphereRadius*z + (Math.random() - 0.5) * randomInfluence;
+        
+    }
+    particlesGeometry.attributes.position.needsUpdate = true;
+    OGParticlePositions = new Float32Array(particlesGeometry.attributes.position.array);
+
+    // Animate function
+    function animate() {
+        const delta = 0.2;
+        const elapsedTime = Date.now();
+        const useTime = elapsedTime / 100000;
+
+        handleKeyboardInput(delta);
+        updateCameraPosition(delta);
+        currentWaterLevel = WATER_LEVEL + Math.sin(useTime * 10);
+        waterMesh.position.set(0, currentWaterLevel, 0);
+        // updateChunks();
+        
+        pinkDD.position.set(magicLightRadius * Math.sin(useTime), 400, magicLightRadius * Math.cos(useTime));
+        directionalLightPink.position.set(magicLightRadius * Math.sin(useTime), 20, magicLightRadius * Math.cos(useTime));
+        // yellowDD.position.set(-magicLightRadius * Math.sin(useTime), 400, -magicLightRadius * Math.cos(useTime));
+        directionalLightYellow.position.set(-magicLightRadius * Math.sin(useTime), 20, -magicLightRadius * Math.cos(useTime));
+        
+        pinkDD.rotation.x += 0.0007;
+        pinkDD.rotation.y += 0.0007;
+        // yellowDD.rotation.x += 0.0007;
+        // yellowDD.rotation.y += 0.0007;
+
+        const positions = particlesGeometry.attributes.position.array;
+        const sizes = particlesGeometry.attributes.size.array;
+        for (let i = 0; i < particleCount; i++) {
+            const i3 = i * 3;
+            const x = OGParticlePositions[i3];
+            const y = OGParticlePositions[i3 + 1];
+            const z = OGParticlePositions[i3 + 2];
+
+            const adj = 4 * Math.sin(useTime);
+
+            sizes[i] = noise.noise(x/250.0, z/250.0, useTime * 10)*10 + 5.5;
+            // sizes[i] = Math.random()*10;
+            // sizes[i] = 100;
+
+            positions[i3] = x + Math.sin(useTime);
+            positions[i3 + 1] = y + Math.cos(useTime);
+            positions[i3 + 2] = z + Math.sin(useTime) * Math.cos(useTime);
+        }
+        particlesGeometry.attributes.position.needsUpdate = true;
+        particlesGeometry.attributes.size.needsUpdate = true;
+
+        const curves = scene.children.filter(child => child.isLine);
+        curves.forEach((curve, index) => {
+            const curveGeometry = curve.geometry;
+            const indicies = curveIndices[index];
+            const point1 = new THREE.Vector3(positions[indicies[0]], positions[indicies[0] + 1], positions[indicies[0] + 2]);
+            const point2 = new THREE.Vector3(positions[indicies[1]], positions[indicies[1] + 1], positions[indicies[1] + 2]);
+            const newCurve = new THREE.CatmullRomCurve3([point1, point2]);
+            curveGeometry.setFromPoints(newCurve.getPoints(50));
+        });
+
+        frame++;
+
+        renderer.render(scene, camera);
+    }
+
 };
   
 export default Terrain;

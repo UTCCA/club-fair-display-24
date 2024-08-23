@@ -95,5 +95,22 @@ int check_button_press_3()
   }
 }
 
+int check_button_press_4()
+{
+  int pressed = digitalRead(BUTTON_PIN_4);
+  if(pressed == HIGH)
+  {
+    if(debounce_check(last_debounce_time_4))
+    {
+      last_debounce_time_4 = millis();
+      return 1;
+    }
+  }
+  else
+  {
+    return 0;
+  }
+}
+
 
 
