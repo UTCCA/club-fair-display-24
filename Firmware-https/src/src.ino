@@ -28,7 +28,7 @@ void loop() {
   int button3Value = check_button_press_3();
   int button4Value = check_button_press_4();
   int potentiometerValue = read_potentiometer();
-  String inputValues = String(button1Value) + String(button2Value) + String(button3Value) + String(button4Value) + String(potentiometerValue);
+  String inputValues = String(button1Value) +'c'+ String(button2Value) +'c'+ String(button3Value) +'c'+ String(button4Value) +'c'+ String(potentiometerValue);
   Serial.println(inputValues);
   sendHTTPrequest(inputValues);
 

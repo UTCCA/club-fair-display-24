@@ -43,7 +43,7 @@ int read_potentiometer()
     
 }
 
-int check_button_press_1()
+int check_button_press_r()
 {
   int pressed = digitalRead(BUTTON_PIN_1);
   if(pressed == HIGH)
@@ -61,7 +61,7 @@ int check_button_press_1()
  
 }
 
-int check_button_press_2()
+int check_button_press_u()
 {
   int pressed = digitalRead(BUTTON_PIN_2);
   if(pressed == HIGH)
@@ -78,7 +78,7 @@ int check_button_press_2()
   }
 }
 
-int check_button_press_3()
+int check_button_press_d()
 {
   int pressed = digitalRead(BUTTON_PIN_3);
   if(pressed == HIGH)
@@ -95,7 +95,7 @@ int check_button_press_3()
   }
 }
 
-int check_button_press_4()
+int check_button_press_l()
 {
   int pressed = digitalRead(BUTTON_PIN_4);
   if(pressed == HIGH)
