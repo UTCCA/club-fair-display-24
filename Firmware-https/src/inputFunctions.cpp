@@ -25,7 +25,7 @@ void sendHTTPrequest(String value)
     if (httpResponseCode > 0) 
     {
         String response = http.getString();
-        Serial.println(response);
+        // Serial.println(response);
     } 
     else 
     {
@@ -40,7 +40,8 @@ void sendHTTPrequest(String value)
 int read_potentiometer() 
 {
     int potentiometer_value = analogRead(POTENTIOMETER_PIN);
-    int mapped_value = map(potentiometer_value, 0, 4095, 100, 999);
+    int mapped_value = map(potentiometer_value, 0, 4095, 0, 100);
+    // Serial.println(String(potentiometer_value));
     return mapped_value;
     // Prepare the server URL with the potentiometer value as a query parameter
     
@@ -132,6 +133,7 @@ int check_button_press_l()
     return 0;
   }
 }
+
 
 
 

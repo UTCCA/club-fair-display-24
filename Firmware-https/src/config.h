@@ -12,12 +12,12 @@
 
 
 // Declare pin assignments
-#define POTENTIOMETER_PIN 36
+#define POTENTIOMETER_PIN 35
 #define BUTTON_PIN_J      18
 #define BUTTON_PIN_R      19
-#define BUTTON_PIN_U      21
-#define BUTTON_PIN_D      22
-#define BUTTON_PIN_L      23
+#define BUTTON_PIN_U      23
+#define BUTTON_PIN_D      32
+#define BUTTON_PIN_L      34
 
 
 
