@@ -21,8 +21,7 @@ def handle_connect():
 
 @socketio.on('message')
 def handle_message(data):
-
-    print(data)
+    print("Received message: " + data)
     global controller_state
     values = data.split('c')
     if len(values) == 12:
