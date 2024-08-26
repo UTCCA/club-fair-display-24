@@ -1,17 +1,25 @@
 import './App.css';
-import Terrain from './terrain';
+import Terrain from './terrain-improvised';
 import Switch from './switch';
-
+import React, { useState, useCallback } from 'react';
 
 function App() {
+
+  const [controllerState, setControllerState] = useState(null);
+  
+  const [isOn, setIsOn] = useState(false);
+  const toggleSwitch = useCallback(() => {
+    setIsOn(!isOn);
+  }, [isOn]);
+
   return (
     <div className="App">
-      <div class="switch-container">
-        <Switch />
+      <div className="switch-container">
+        <Switch isOn={isOn} toggleSwitch={toggleSwitch} />
       </div>
 
-      <div class="terrain-container">
-        <Terrain />
+      <div className="terrain-container">
+        <Terrain usingWASDControls={isOn} controllerState={controllerState}/>
       </div>
     </div>
   );

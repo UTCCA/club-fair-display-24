@@ -1,14 +1,8 @@
-import React, { useState } from 'react';
 import './App.css';
 
-function Switch() {
-  const [isOn, setIsOn] = useState(false);
-  const offText = "WASD controls"
-  const onText = "Custom controller"
-
-  const toggleSwitch = () => {
-    setIsOn(!isOn);
-  };
+function Switch({isOn, toggleSwitch}) {
+  const offText = "Controller"
+  const onText = "KBM"
 
   return (
     <div className="switch-container">
