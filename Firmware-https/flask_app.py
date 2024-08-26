@@ -70,6 +70,8 @@ def handle_input_values(request):
         controller_state.gyroscope['y'] = int(values[10])
         controller_state.gyroscope['z'] = int(values[11])
 
+        emit('controller_state', controller_state)
+
         return f"Values received.", 200
     else:
         return "Invalid request", 400
