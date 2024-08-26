@@ -2,6 +2,7 @@ from flask import Flask
 from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
+CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 controller_state = {
@@ -49,6 +50,29 @@ def handle_message(data):
     else:
         emit('error', {'message': 'Invalid request'})
 
+@app.route('/postControllerState', methods=['GET'])
+def handle_input_values(request):
+    global controller_state
+    values = request.args.get('value').split('c')
+    if len(values) == 12:
+        print(f"Received value: {values}")
+
+        controller_state.jump = True if values[0] == '1' else False
+        controller_state.forward = True if values[1] == '1' else False
+        controller_state.backward = True if values[2] == '1' else False
+        controller_state.left = True if values[3] == '1' else False
+        controller_state.right = True if values[4] == '1' else False
+        controller_state.potentiometer = int(values[5])
+        controller_state.accelerometer['x'] = int(values[6])
+        controller_state.accelerometer['y'] = int(values[7])
+        controller_state.accelerometer['z'] = int(values[8])
+        controller_state.gyroscope['x'] = int(values[9])
+        controller_state.gyroscope['y'] = int(values[10])
+        controller_state.gyroscope['z'] = int(values[11])
+
+        return f"Values received.", 200
+    else:
+        return "Invalid request", 400
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=8080)
 
