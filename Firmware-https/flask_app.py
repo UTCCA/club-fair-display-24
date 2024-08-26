@@ -1,5 +1,5 @@
 from flask import Flask
-from flask_socketio import SocketIO, emit, request
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -17,12 +17,12 @@ controller_state = {
 
 @socketio.on('connect')
 def handle_connect():
-    print(f"Client connected: {request.sid}")
+    print("Client connected")
     emit('controller_state', controller_state)
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print(f"Client disconnected: {request.sid}")
+    print("Client disconnected")
 
 @socketio.on('message')
 def handle_message(data):
