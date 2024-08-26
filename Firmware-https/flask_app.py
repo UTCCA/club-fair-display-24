@@ -53,7 +53,7 @@ def handle_message(data):
         emit('error', {'message': 'Invalid request'})
 
 @app.route('/postControllerState', methods=['GET'])
-def handle_input_values(request):
+def handle_post_values():
     global controller_state
     values = request.args.get('value').split('c')
     if len(values) == 12:
