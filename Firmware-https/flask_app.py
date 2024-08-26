@@ -18,13 +18,17 @@ controller_state = {
     "gyroscope": {'x': 0, 'y': 0, 'z': 0}
 }
 
+fe_sid = []
+
 @socketio.on('connect')
 def handle_connect():
+    fe_sid.append(request.sid)
     print("Client connected")
     emit('controller_state', controller_state)
 
 @socketio.on('disconnect')
 def handle_disconnect():
+    fe_sid.remove(request.sid)
     print("Client disconnected")
 
 @socketio.on('message')
@@ -56,6 +60,7 @@ def handle_message(data):
 def handle_post_values():
     global controller_state
     values = request.args.get('value').split('c')
+    request.sid = fe_sid[0]
     if len(values) == 12:
         print(f"Received value: {values}")
 
