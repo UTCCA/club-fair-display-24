@@ -1,14 +1,12 @@
-from flask import Flask, request
-from flask_cors import CORS
-import json
+from flask import Flask
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
-CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Button states: false means inactive, true means active
 controller_state = {
     "forward": False,
-    "bakcward": False,
+    "backward": False,
     "left": False,
     "right": False,
     "jump": False,
@@ -17,36 +15,86 @@ controller_state = {
     "gyroscope": {'x': 0, 'y': 0, 'z': 0}
 }
 
-@app.route('/inputValues', methods=['GET'])
-def handle_input_values():
+@socketio.on('connect')
+def handle_connect():
+    emit('controller_state', controller_state)
 
+@socketio.on('input_values')
+def handle_input_values(data):
     global controller_state
-    values = request.args.get('value').split('c')
+    values = data.split('c')
     if len(values) == 12:
         print(f"Received value: {values}")
+        
+        controller_state['jump'] = True if values[0] == '1' else False
+        controller_state['forward'] = True if values[1] == '1' else False
+        controller_state['backward'] = True if values[2] == '1' else False
+        controller_state['left'] = True if values[3] == '1' else False
+        controller_state['right'] = True if values[4] == '1' else False
+        controller_state['potentiometer'] = int(values[5])
+        controller_state['accelerometer']['x'] = int(values[6])
+        controller_state['accelerometer']['y'] = int(values[7])
+        controller_state['accelerometer']['z'] = int(values[8])
+        controller_state['gyroscope']['x'] = int(values[9])
+        controller_state['gyroscope']['y'] = int(values[10])
+        controller_state['gyroscope']['z'] = int(values[11])
 
-        controller_state.jump = True if values[0] == '1' else False
-        controller_state.forward = True if values[1] == '1' else False
-        controller_state.backward = True if values[2] == '1' else False
-        controller_state.left = True if values[3] == '1' else False
-        controller_state.right = True if values[4] == '1' else False
-        controller_state.potentiometer = int(values[5])
-        controller_state.accelerometer['x'] = int(values[6])
-        controller_state.accelerometer['y'] = int(values[7])
-        controller_state.accelerometer['z'] = int(values[8])
-        controller_state.gyroscope['x'] = int(values[9])
-        controller_state.gyroscope['y'] = int(values[10])
-        controller_state.gyroscope['z'] = int(values[11])
-
-        return f"Values received.", 200
+        emit('controller_state', controller_state)
     else:
-        return "Invalid request", 400
-
-@app.route('/getControllerState', methods=['GET'])
-def handle_get_controller_state():
-
-    global controller_state
-    return json.dumps(controller_state)
+        emit('error', {'message': 'Invalid request'})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    socketio.run(app, host='0.0.0.0', port=8080)
+
+# from flask import Flask, request
+# from flask_cors import CORS
+# import json
+
+# app = Flask(__name__)
+# CORS(app)
+
+# # Button states: false means inactive, true means active
+# controller_state = {
+#     "forward": False,
+#     "bakcward": False,
+#     "left": False,
+#     "right": False,
+#     "jump": False,
+#     "potentiometer": 0,
+#     "accelerometer": {'x': 0, 'y': 0, 'z': 0},
+#     "gyroscope": {'x': 0, 'y': 0, 'z': 0}
+# }
+
+# @app.route('/inputValues', methods=['GET'])
+# def handle_input_values():
+
+#     global controller_state
+#     values = request.args.get('value').split('c')
+#     if len(values) == 12:
+#         print(f"Received value: {values}")
+
+#         controller_state.jump = True if values[0] == '1' else False
+#         controller_state.forward = True if values[1] == '1' else False
+#         controller_state.backward = True if values[2] == '1' else False
+#         controller_state.left = True if values[3] == '1' else False
+#         controller_state.right = True if values[4] == '1' else False
+#         controller_state.potentiometer = int(values[5])
+#         controller_state.accelerometer['x'] = int(values[6])
+#         controller_state.accelerometer['y'] = int(values[7])
+#         controller_state.accelerometer['z'] = int(values[8])
+#         controller_state.gyroscope['x'] = int(values[9])
+#         controller_state.gyroscope['y'] = int(values[10])
+#         controller_state.gyroscope['z'] = int(values[11])
+
+#         return f"Values received.", 200
+#     else:
+#         return "Invalid request", 400
+
+# @app.route('/getControllerState', methods=['GET'])
+# def handle_get_controller_state():
+
+#     global controller_state
+#     return json.dumps(controller_state)
+
+# if __name__ == '__main__':
+#     app.run(host='0.0.0.0', port=8080)
