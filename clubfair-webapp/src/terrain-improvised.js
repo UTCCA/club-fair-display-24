@@ -28,7 +28,7 @@ const maxSpeed = 5;
 const underwaterFog = new THREE.FogExp2(0x000033, 0.05);
 const regularFog = new THREE.FogExp2(0x111111, 0.002);
 
-const socket = io('http://samuraimain.ddns.net:8080');
+const socket = io('');
 
 let controllerState = null;
 let lastStateUpdateTime = Date.now();
