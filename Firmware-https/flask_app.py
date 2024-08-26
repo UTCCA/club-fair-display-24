@@ -59,18 +59,18 @@ def handle_post_values():
     if len(values) == 12:
         print(f"Received value: {values}")
 
-        controller_state.jump = True if values[0] == '1' else False
-        controller_state.forward = True if values[1] == '1' else False
-        controller_state.backward = True if values[2] == '1' else False
-        controller_state.left = True if values[3] == '1' else False
-        controller_state.right = True if values[4] == '1' else False
-        controller_state.potentiometer = int(values[5])
-        controller_state.accelerometer['x'] = int(values[6])
-        controller_state.accelerometer['y'] = int(values[7])
-        controller_state.accelerometer['z'] = int(values[8])
-        controller_state.gyroscope['x'] = int(values[9])
-        controller_state.gyroscope['y'] = int(values[10])
-        controller_state.gyroscope['z'] = int(values[11])
+        controller_state['jump'] = True if values[0] == '1' else False
+        controller_state['forward'] = True if values[1] == '1' else False
+        controller_state['backward'] = True if values[2] == '1' else False
+        controller_state['left'] = True if values[3] == '1' else False
+        controller_state['right'] = True if values[4] == '1' else False
+        controller_state['potentiometer'] = int(values[5])
+        controller_state['accelerometer']['x'] = int(values[6])
+        controller_state['accelerometer']['y'] = int(values[7])
+        controller_state['accelerometer']['z'] = int(values[8])
+        controller_state['gyroscope']['x'] = int(values[9])
+        controller_state['gyroscope']['y'] = int(values[10])
+        controller_state['gyroscope']['z'] = int(values[11])
 
         emit('controller_state', controller_state)
 
