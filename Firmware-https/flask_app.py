@@ -72,7 +72,7 @@ def handle_post_values():
         controller_state['gyroscope']['y'] = float(values[10])
         controller_state['gyroscope']['z'] = float(values[11])
 
-        emit('controller_state', controller_state)
+        emit('controller_state', controller_state, namespace='/')
 
         return f"Values received.", 200
     else:
