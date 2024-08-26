@@ -40,13 +40,13 @@ def handle_message(data):
         controller_state['backward'] = True if values[2] == '1' else False
         controller_state['left'] = True if values[3] == '1' else False
         controller_state['right'] = True if values[4] == '1' else False
-        controller_state['potentiometer'] = int(values[5])
-        controller_state['accelerometer']['x'] = int(values[6])
-        controller_state['accelerometer']['y'] = int(values[7])
-        controller_state['accelerometer']['z'] = int(values[8])
-        controller_state['gyroscope']['x'] = int(values[9])
-        controller_state['gyroscope']['y'] = int(values[10])
-        controller_state['gyroscope']['z'] = int(values[11])
+        controller_state['potentiometer'] = float(values[5])
+        controller_state['accelerometer']['x'] = float(values[6])
+        controller_state['accelerometer']['y'] = float(values[7])
+        controller_state['accelerometer']['z'] = float(values[8])
+        controller_state['gyroscope']['x'] = float(values[9])
+        controller_state['gyroscope']['y'] = float(values[10])
+        controller_state['gyroscope']['z'] = float(values[11])
 
         emit('controller_state', controller_state)
     else:
@@ -64,13 +64,13 @@ def handle_post_values():
         controller_state['backward'] = True if values[2] == '1' else False
         controller_state['left'] = True if values[3] == '1' else False
         controller_state['right'] = True if values[4] == '1' else False
-        controller_state['potentiometer'] = int(values[5])
-        controller_state['accelerometer']['x'] = int(values[6])
-        controller_state['accelerometer']['y'] = int(values[7])
-        controller_state['accelerometer']['z'] = int(values[8])
-        controller_state['gyroscope']['x'] = int(values[9])
-        controller_state['gyroscope']['y'] = int(values[10])
-        controller_state['gyroscope']['z'] = int(values[11])
+        controller_state['potentiometer'] = float(values[5])
+        controller_state['accelerometer']['x'] = float(values[6])
+        controller_state['accelerometer']['y'] = float(values[7])
+        controller_state['accelerometer']['z'] = float(values[8])
+        controller_state['gyroscope']['x'] = float(values[9])
+        controller_state['gyroscope']['y'] = float(values[10])
+        controller_state['gyroscope']['z'] = float(values[11])
 
         emit('controller_state', controller_state)
 
