@@ -19,8 +19,8 @@ controller_state = {
 def handle_connect():
     emit('controller_state', controller_state)
 
-@socketio.on('input_values')
-def handle_input_values(data):
+@socketio.on('message')
+def handle_message(data):
     global controller_state
     values = data.split('c')
     if len(values) == 12:
