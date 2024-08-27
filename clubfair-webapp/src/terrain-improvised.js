@@ -12,7 +12,7 @@ const GRAVITY = -0.3;
 const g = 9.81;
 const ROTATION_SMOOTHING = 0.1;
 const COMPLEMENTARY_FILTER_ALPHA = 0.98;
-const DRIFT_CORRECTION_FACTOR = 0.98;
+const DRIFT_CORRECTION_FACTOR = 0.992;
 const TILT_SENSITIVITY = 0.0005;
 const GYRO_SENSITIVITY = 0.01;
 const GYRO_THRESHOLD = 0.1;
@@ -32,6 +32,9 @@ const socket = io('');
 
 let controllerState = null;
 let lastStateUpdateTime = Date.now();
+let WASDEnabled = false;
+
+let pitchSign = 1;
 
 socket.on('connect', () => {
     console.log('Connected to WebSocket server');
@@ -39,12 +42,12 @@ socket.on('connect', () => {
 
 socket.on('controller_state', (data) => {
     if(Date.now() - lastStateUpdateTime < API_CALL_INTERVAL){
-        console.log(lastStateUpdateTime - Date.now());
+        // console.log(lastStateUpdateTime - Date.now());
         return;
     }
     lastStateUpdateTime = Date.now();
     controllerState = data;
-    console.log(data);
+    // console.log(data);
 });
 
 const Terrain = (properties) => {
@@ -57,7 +60,7 @@ const Terrain = (properties) => {
 
     // }, [controllerState, stateUpdateTime]);
 
-    const [WASDEnabled, setWASDEnabled] = useState(properties.usingWASDControls);
+    // const [WASDEnabled, setWASDEnabled] = useState(properties.usingWASDControls);
     const sceneRef = useRef(null);
     const cameraRef = useRef(null);
     const rendererRef = useRef(null);
@@ -109,6 +112,7 @@ const Terrain = (properties) => {
         const dGeo = new THREE.DodecahedronGeometry(20);
         const emissiveColorPink = new THREE.Color(0xff0044);
         const ddMATPink = new THREE.MeshStandardMaterial({
+            color: emissiveColorPink,
             emissive: emissiveColorPink,
             emissiveIntensity: 5,
         });
@@ -324,6 +328,8 @@ const Terrain = (properties) => {
             //     fetchData();
             // }
 
+            WASDEnabled = properties.usingWASDControls;
+
             updateScene();
             renderer.render(scene, camera);
         };
@@ -350,13 +356,13 @@ const Terrain = (properties) => {
         const velocity = velocityRef.current;
 
         if(controllerState!=null && !WASDEnabled){
-            console.log(controllerState);
-            if (controllerState.jump)
-            {
-                keys.current.space = true
-            } else {
-                keys.current.space = false
-            }
+            // console.log(controllerState);
+            // if (controllerState.jump)
+            // {
+            //     keys.current.space = true
+            // } else {
+            //     keys.current.space = false
+            // }
             if (controllerState.left)
             {
                 keys.current.s = true
@@ -382,36 +388,36 @@ const Terrain = (properties) => {
                 keys.current.d = false
             }
             
+            if (controllerState.jump){
+                // Get the current camera rotation
+                const currentRotation = new THREE.Euler().setFromQuaternion(cameraRef.current.quaternion);
+                const rotationMatrix = new THREE.Matrix4().makeRotationFromEuler(currentRotation);
 
-            // Get the current camera rotation
-            const currentRotation = new THREE.Euler().setFromQuaternion(cameraRef.current.quaternion);
-            const rotationMatrix = new THREE.Matrix4().makeRotationFromEuler(currentRotation);
+                // Transform gyroscope data to world space
+                const worldGyro = new THREE.Vector3(
+                    controllerState.gyroscope.x,
+                    controllerState.gyroscope.z,
+                    controllerState.gyroscope.y
+                ).applyMatrix4(rotationMatrix);
 
-            // Transform gyroscope data to world space
-            const worldGyro = new THREE.Vector3(
-                controllerState.gyroscope.x,
-                controllerState.gyroscope.z,
-                controllerState.gyroscope.y
-            ).applyMatrix4(rotationMatrix);
+                // Apply gyroscope rotation with improved thresholding and drift correction
+                if (Math.abs(worldGyro.x) > GYRO_THRESHOLD) {
+                    currentPitchRef.current += worldGyro.x * GYRO_SENSITIVITY * DRIFT_CORRECTION_FACTOR;
+                } else {
+                    currentPitchRef.current *= DRIFT_CORRECTION_FACTOR; // Slowly reduce any accumulated error
+                }
 
-            // Apply gyroscope rotation with improved thresholding and drift correction
-            if (Math.abs(worldGyro.x) > GYRO_THRESHOLD) {
-                currentPitchRef.current += worldGyro.x * GYRO_SENSITIVITY * DRIFT_CORRECTION_FACTOR;
-            } else {
-                currentPitchRef.current *= DRIFT_CORRECTION_FACTOR; // Slowly reduce any accumulated error
+                if (Math.abs(worldGyro.y) > GYRO_THRESHOLD) {
+                    currentYawRef.current += worldGyro.y * GYRO_SENSITIVITY;// * DRIFT_CORRECTION_FACTOR;
+                } else {
+                    // currentRotation.y *= DRIFT_CORRECTION_FACTOR; // Slowly reduce any accumulated error
+                }
+
+                currentPitchRef.current = Math.max(MIN_PITCH_ANGLE - Math.PI / 2, Math.min(MAX_PITCH_ANGLE - Math.PI / 2, currentPitchRef.current));
+
+                const euler = new THREE.Euler(currentPitchRef.current, currentYawRef.current, 0, 'YXZ');
+                cameraRef.current.quaternion.setFromEuler(euler);
             }
-
-            if (Math.abs(worldGyro.y) > GYRO_THRESHOLD) {
-                currentYawRef.current += worldGyro.y * GYRO_SENSITIVITY;// * DRIFT_CORRECTION_FACTOR;
-            } else {
-                // currentRotation.y *= DRIFT_CORRECTION_FACTOR; // Slowly reduce any accumulated error
-            }
-
-            currentPitchRef.current = Math.max(MIN_PITCH_ANGLE - Math.PI / 2, Math.min(MAX_PITCH_ANGLE - Math.PI / 2, currentPitchRef.current));
-
-            const euler = new THREE.Euler(currentPitchRef.current, currentYawRef.current, 0, 'YXZ');
-            cameraRef.current.quaternion.setFromEuler(euler);
-
             
         }
     
@@ -547,8 +553,36 @@ const Terrain = (properties) => {
 
         pinkDDRef.current.position.set(magicLightRadius * Math.sin(elapsedTime), 400, magicLightRadius * Math.cos(elapsedTime));
         directionalLightPinkRef.current.position.set(magicLightRadius * Math.sin(elapsedTime), 20, magicLightRadius * Math.cos(elapsedTime));
+
+        const hslColor = new THREE.Color(directionalLightPinkRef.current.color);
+
+        if(controllerState !== null && controllerState.potentiometer != 0){
+            
+            const hsl = {h: 0, s: 0, l: 0};
+            hslColor.getHSL(hsl);
+            
+            console.log(controllerState.potentiometer/100, hsl.h);
+            hslColor.setHSL(controllerState.potentiometer/100, hsl.s, hsl.l);
+            directionalLightPinkRef.current.color.set(hslColor);
+            pinkDDRef.current.material.color.set(hslColor);
+            pinkDDRef.current.material.emissive.set(hslColor);
+
+
+        }
+
         directionalLightYellowRef.current.position.set(-magicLightRadius * Math.sin(elapsedTime), 20, -magicLightRadius * Math.cos(elapsedTime));
         
+        if(controllerState !== null && controllerState.potentiometer != 0){
+            
+            const hsl = {h: 0, s: 0, l: 0};
+            hslColor.getHSL(hsl);
+            
+            console.log(1-controllerState.potentiometer/100, hsl.h);
+            hslColor.setHSL(1-controllerState.potentiometer/100, hsl.s, hsl.l);
+            directionalLightYellowRef.current.color.set(hslColor);
+
+        }
+
         pinkDDRef.current.rotation.x += 0.0007;
         pinkDDRef.current.rotation.y += 0.0007;
 
@@ -640,9 +674,9 @@ const Terrain = (properties) => {
         };
     }, [handleKeyDown, handleKeyUp, handleMouseMove, handleMouseDown, handleMouseUp, handleWindowResize]);
 
-    useEffect(() => {
-        setWASDEnabled(properties.usingWASDControls);
-    }, [properties.usingWASDControls]);
+    // useEffect(() => {
+    //     setWASDEnabled(properties.usingWASDControls);
+    // }, [properties.usingWASDControls]);
 
     return null;
 };

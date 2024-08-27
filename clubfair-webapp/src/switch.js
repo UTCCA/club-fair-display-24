@@ -9,7 +9,7 @@ function Switch({isOn, toggleSwitch}) {
       <div className={`switch ${isOn ? 'on' : 'off'}`} onClick={toggleSwitch}>
         <div className="switch-handle"></div>
       </div>
-      <p className="switch-text">{isOn ? onText : offText}</p>
+      <p className="switch-text" id="sw-txt-id">{isOn ? onText : offText}</p>
     </div>
   );
 }
