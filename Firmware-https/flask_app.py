@@ -60,7 +60,6 @@ def handle_message(data):
 def handle_post_values():
     global controller_state
     values = request.args.get('value').split('c')
-    request.sid = fe_sid[0]
     if len(values) == 12:
         print(f"Received value: {values}")
 
@@ -77,7 +76,10 @@ def handle_post_values():
         controller_state['gyroscope']['y'] = float(values[10])
         controller_state['gyroscope']['z'] = float(values[11])
 
-        emit('controller_state', controller_state, namespace='/')
+        try:
+            request.sid = fe_sid[0]
+            emit('controller_state', controller_state, namespace='/')
+        except: None
 
         return f"Values received.", 200
     else:
