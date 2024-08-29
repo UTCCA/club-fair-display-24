@@ -28,11 +28,10 @@ const maxSpeed = 5;
 const underwaterFog = new THREE.FogExp2(0x000033, 0.05);
 const regularFog = new THREE.FogExp2(0x111111, 0.002);
 
-const socket = io('');
+const socket = io('http://localhost:8080');
 
 let controllerState = null;
 let lastStateUpdateTime = Date.now();
-let WASDEnabled = false;
 
 let pitchSign = 1;
 
@@ -80,6 +79,7 @@ const Terrain = (properties) => {
     currentWaterLevelRef.current = WATER_LEVEL;
 
     const keys = useRef({ w: false, a: false, s: false, d: false, space: false });
+    const buttons = useRef({ w: false, a: false, s: false, d: false, space: false });
     const velocityRef = useRef(new THREE.Vector3(0, 0, 0));
     const isMouseDownRef = useRef(false);
     const previousMousePositionRef = useRef({ x: 0, y: 0 });
@@ -303,7 +303,7 @@ const Terrain = (properties) => {
         scene.add(terrain);
         terrainRef.current = terrain;
 
-        const waterGeometry = new THREE.PlaneGeometry(edgeSize, edgeSize);
+        const waterGeometry = new THREE.PlaneGeometry(edgeSize * 4, edgeSize * 4);
         const waterMaterial = new THREE.MeshPhongMaterial({
             color: 0x0000ff,
             transparent: true,
@@ -328,7 +328,7 @@ const Terrain = (properties) => {
             //     fetchData();
             // }
 
-            WASDEnabled = properties.usingWASDControls;
+            // WASDEnabled = properties.usingWASDControls;
 
             updateScene();
             renderer.render(scene, camera);
@@ -355,7 +355,7 @@ const Terrain = (properties) => {
         const camera = cameraRef.current;
         const velocity = velocityRef.current;
 
-        if(controllerState!=null && !WASDEnabled){
+        if(controllerState!=null && (Date.now() - lastStateUpdateTime < 5000)){
             // console.log(controllerState);
             // if (controllerState.jump)
             // {
@@ -365,75 +365,75 @@ const Terrain = (properties) => {
             // }
             if (controllerState.left)
             {
-                keys.current.s = true
+                buttons.current.s = true
             } else {
-                keys.current.s = false
+                buttons.current.s = false
             }
             if (controllerState.right)
             {
-                keys.current.a = true
+                buttons.current.a = true
             } else {
-                keys.current.a = false
+                buttons.current.a = false
             }
             if (controllerState.backward)
             {
-                keys.current.w = true
+                buttons.current.w = true
             } else {
-                keys.current.w = false
+                buttons.current.w = false
             }
             if (controllerState.forward)
             {
-                keys.current.d = true
+                buttons.current.d = true
             } else {
-                keys.current.d = false
+                buttons.current.d = false
             }
             
-            if (controllerState.jump){
-                // Get the current camera rotation
-                const currentRotation = new THREE.Euler().setFromQuaternion(cameraRef.current.quaternion);
-                const rotationMatrix = new THREE.Matrix4().makeRotationFromEuler(currentRotation);
+            // Get the current camera rotation
+            const currentRotation = new THREE.Euler().setFromQuaternion(cameraRef.current.quaternion);
+            const rotationMatrix = new THREE.Matrix4().makeRotationFromEuler(currentRotation);
 
-                // Transform gyroscope data to world space
-                const worldGyro = new THREE.Vector3(
-                    controllerState.gyroscope.x,
-                    controllerState.gyroscope.z,
-                    controllerState.gyroscope.y
-                ).applyMatrix4(rotationMatrix);
+            // Transform gyroscope data to world space
+            const worldGyro = new THREE.Vector3(
+                pitchSign * controllerState.gyroscope.x,
+                controllerState.gyroscope.z,
+                controllerState.gyroscope.y
+            );//.applyMatrix4(rotationMatrix);
 
-                // Apply gyroscope rotation with improved thresholding and drift correction
-                if (Math.abs(worldGyro.x) > GYRO_THRESHOLD) {
-                    currentPitchRef.current += worldGyro.x * GYRO_SENSITIVITY * DRIFT_CORRECTION_FACTOR;
-                } else {
-                    currentPitchRef.current *= DRIFT_CORRECTION_FACTOR; // Slowly reduce any accumulated error
-                }
-
-                if (Math.abs(worldGyro.y) > GYRO_THRESHOLD) {
-                    currentYawRef.current += worldGyro.y * GYRO_SENSITIVITY;// * DRIFT_CORRECTION_FACTOR;
-                } else {
-                    // currentRotation.y *= DRIFT_CORRECTION_FACTOR; // Slowly reduce any accumulated error
-                }
-
-                currentPitchRef.current = Math.max(MIN_PITCH_ANGLE - Math.PI / 2, Math.min(MAX_PITCH_ANGLE - Math.PI / 2, currentPitchRef.current));
-
-                const euler = new THREE.Euler(currentPitchRef.current, currentYawRef.current, 0, 'YXZ');
-                cameraRef.current.quaternion.setFromEuler(euler);
+            // Apply gyroscope rotation with improved thresholding and drift correction
+            if (!controllerState.jump && Math.abs(worldGyro.x) > GYRO_THRESHOLD) {
+                currentPitchRef.current += worldGyro.x * GYRO_SENSITIVITY * DRIFT_CORRECTION_FACTOR;
+            } else if (!controllerState.jump && controllerState.accelerometer.z >= 8.0) {
+                currentPitchRef.current *= DRIFT_CORRECTION_FACTOR; // Slowly reduce any accumulated error
             }
+
+            if (!controllerState.jump && Math.abs(worldGyro.y) > GYRO_THRESHOLD) {
+                currentYawRef.current += worldGyro.y * GYRO_SENSITIVITY;// * DRIFT_CORRECTION_FACTOR;
+            }
+
+            const pr = currentPitchRef.current
+            currentPitchRef.current = Math.max(MIN_PITCH_ANGLE - Math.PI / 2, Math.min(MAX_PITCH_ANGLE - Math.PI / 2, currentPitchRef.current));
+            if (pr !== currentPitchRef.current){
+                // pitchSign *= -1;
+            }
+
+            const euler = new THREE.Euler(currentPitchRef.current, currentYawRef.current, 0, 'YXZ');
+            cameraRef.current.quaternion.setFromEuler(euler);
             
         }
     
         // Forward/Backward
-        if (keys.current.w) {
+        if (keys.current.w || buttons.current.w) {
             direction.z -= 1;
         }
-        if (keys.current.s) {
+        if (keys.current.s || buttons.current.s) {
             direction.z += 1;
         }
     
         // Left/Right
-        if (keys.current.a) {
+        if (keys.current.a || buttons.current.a) {
             direction.x -= 1;
         }
-        if (keys.current.d) {
+        if (keys.current.d || buttons.current.d) {
             direction.x += 1;
         }
     
@@ -458,15 +458,15 @@ const Terrain = (properties) => {
         }
     
         // Handle jump
-        if (keys.current.space && isGroundedRef.current) {
+        if ((keys.current.space || buttons.current.space) && isGroundedRef.current) {
             velocity.y = 1.7; // Initial jump velocity
             isGroundedRef.current = false;
         }
-        if (keys.current.space && isSwimmingRef.current && camera.position.y <= currentWaterLevelRef.current) {
+        if ((keys.current.space || buttons.current.space) && isSwimmingRef.current && camera.position.y <= currentWaterLevelRef.current) {
             velocity.y = 1;
             isSwimmingRef.current = false;
         }
-    }, [WASDEnabled]);
+    }, []);
     
     // Helper function to get terrain height
     const getTerrainHeight = useCallback((x, z) => {
